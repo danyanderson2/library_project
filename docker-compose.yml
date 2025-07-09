@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./biblio_front
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./biblio_front:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5600
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - biblio-network
+
+  # Backend service
+  backend:
+    build:
+      context: ./biblio_back
+      dockerfile: Dockerfile
+    ports:
+      - "5600:5600"
+    volumes:
+      - ./biblio_back:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
+      - PORT=5600
+      - DB_HOST=db
+      - DB_USER=biblio_user
+      - DB_PASSWORD=biblio_password
+      - DB_NAME=biblio_db
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - biblio-network
+
+  # MySQL Database service
+  db:
+    image: mysql:8.4
+    ports:
+      - "4000:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=biblio
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=secret
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    networks:
+      - biblio-network
+
+networks:
+  biblio-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
